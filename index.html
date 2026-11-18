@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mejenga del miércoles</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0f3d24;color:#111;padding:14px}
+.w{max-width:560px;margin:0 auto}
+h1{color:#fff;font-size:22px;margin:4px 0 12px;text-align:center}
+.c{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px}
+h2{font-size:16px;margin:0 0 8px}
+.bar{height:12px;background:#e5e5e5;border-radius:8px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:#1db954;transition:width .3s}
+input[type=text]{width:100%;font-size:17px;padding:12px;border:1px solid #ccc;border-radius:10px}
+label{display:flex;align-items:center;gap:8px;font-size:16px;margin:10px 0}
+label input{width:22px;height:22px}
+button{width:100%;font-size:17px;font-weight:700;padding:13px;border:0;border-radius:12px;cursor:pointer;margin-top:8px}
+.go{background:#1db954;color:#fff}.sec{background:#e9e9e9}.rojo{background:#d93025;color:#fff}
+ol{margin:0;padding-left:22px;font-size:16px;line-height:1.8}
+li .x{border:0;background:none;color:#d93025;font-size:14px;width:auto;padding:0 6px;margin:0}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.t{border-radius:12px;padding:10px}.t h3{margin:0 0 6px;text-align:center}
+.wh{background:#fff;border:2px solid #222}.bk{background:#1a1a1a;color:#fff}
+.msg{font-size:14px;text-align:center;min-height:18px;color:#d93025}
+.ok{color:#137333}
+.lleno{background:#fff3cd;border-radius:10px;padding:12px;text-align:center;font-weight:700}
+.row{display:flex;gap:8px}.row button{margin-top:8px}
+.pago{background:#e8f5e9;border-radius:10px;padding:10px;text-align:center;font-size:19px;font-weight:800;margin:0 0 10px;color:#137333}
+.mt{display:flex;gap:8px}.mt button{width:auto;margin-top:0;padding:0 18px}
+.ppm{font-size:15px;text-align:center;margin:8px 0 0;font-weight:600}
+.s{font-size:13px;color:#666;text-align:center}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>⚽ Mejenga del miércoles</h1>
+
+<div class="c">
+  <h2>💰 Valor de la cancha</h2>
+  <div class="mt"><input type="text" id="monto" inputmode="numeric" placeholder="Ej: 40000"><button class="go" id="btnMonto">Guardar</button></div>
+  <p class="ppm" id="pp"></p>
+</div>
+
+<div class="c">
+  <h2 id="titulo">Cargando…</h2>
+  <div class="bar"><i id="barra" style="width:0"></i></div>
+  <div id="form">
+    <input type="text" id="nombre" placeholder="Nombre del jugador" maxlength="30">
+    <label><input type="checkbox" id="portero"> Es portero 🧤</label>
+    <button class="go" id="btnIn">Me apunto ✅</button>
+  </div>
+  <div class="lleno" id="lleno" style="display:none"></div>
+  <p class="msg" id="msg"></p>
+</div>
+
+<div class="c" id="cajaEq" style="display:none">
+  <p class="pago" id="pago"></p>
+  <div class="teams">
+    <div class="t wh"><h3>⚪ Blanco</h3><ol id="eb"></ol></div>
+    <div class="t bk"><h3>⚫ Negro</h3><ol id="en"></ol></div>
+  </div>
+  <button class="sec" id="btnCopiar">📋 Copiar para WhatsApp</button>
+</div>
+
+<div class="c">
+  <h2>Confirmados</h2>
+  <ol id="lista"></ol>
+  <p class="s">Se actualiza sola. Con 🗑 se quita a alguien de la lista.</p>
+</div>
+
+<div class="c">
+  <h2>Organizar</h2>
+  <div class="row">
+    <button class="sec" data-cupo="14">Cupo 14</button>
+    <button class="sec" data-cupo="16">Cupo 16</button>
+  </div>
+  <button class="go" id="btnFormar">⚽ Formar / volver a sortear equipos</button>
+  <button class="rojo" id="btnReset">Reiniciar semana (borra todo)</button>
+  <p class="s">Cualquiera puede formar o volver a sortear los equipos.</p>
+</div>
+</div>
+
+<script>
+var API="https://script.google.com/macros/s/AKfycbwuOMEl58fEClX8ulCGuMEDbTZYedGM2M46cfYq-k2919mmeIrH0UXswgAUFUL5ItGznQ/exec";
+var E=null, ocupado=false;
+var $=function(i){return document.getElementById(i)};
+var TOKEN=(function(){try{var t=localStorage.getItem("mj_tok");if(!t){t=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem("mj_tok",t)}return t}catch(e){return ""}})();
+function mios(){try{return JSON.parse(localStorage.getItem("mj_mios")||"[]")}catch(e){return[]}}
+function setMios(a){try{localStorage.setItem("mj_mios",JSON.stringify(a))}catch(e){}}
+
+// Sin cookies: funciona aunque la persona tenga varias cuentas de Google abiertas.
+function api(a,args){
+  return fetch(API,{method:"POST",credentials:"omit",redirect:"follow",body:JSON.stringify({a:a,args:args||[]})})
+    .then(function(r){return r.json()})
+    .then(function(r){if(!r.ok)throw new Error(r.e);return r.d});
+}
+function llamar(fn,args,ok){
+  ocupado=true;msg("Guardando…",true);
+  api(fn,args).then(function(e){ocupado=false;msg("");pintar(e);ok&&ok(e)})
+    .catch(function(err){ocupado=false;msg(String(err.message||err).replace(/^Error:\s*/,"")||"Sin conexión, intente de nuevo.")});
+}
+function msg(t,ok){var m=$("msg");m.textContent=t;m.className="msg"+(ok?" ok":"")}
+
+function pintar(e){
+  E=e;var n=e.lista.length,lleno=n>=e.cupo;
+  $("titulo").textContent=n+" de "+e.cupo+" confirmados ("+(e.cupo/2)+" vs "+(e.cupo/2)+")";
+  $("barra").style.width=Math.min(100,n/e.cupo*100)+"%";
+  var cerrado=lleno||!!e.equipos;
+  $("form").style.display=cerrado?"none":"";
+  $("lleno").style.display=cerrado?"":"none";
+  $("lleno").textContent=e.equipos?"✅ Equipos formados":"🔒 Lista llena — ya se pueden formar los equipos";
+  var ol=$("lista");ol.innerHTML="";
+  e.lista.forEach(function(j){
+    var li=document.createElement("li");li.textContent=j.n+(j.p?" 🧤":"");
+    var b=document.createElement("button");b.className="x";b.textContent="🗑";
+    b.onclick=function(){llamar("quitar",[j.n,TOKEN,""],function(){setMios(mios().filter(function(x){return x!==j.n}))})};
+    li.appendChild(b);ol.appendChild(li);
+  });
+  pintarMonto(e);
+  if(e.equipos){
+    $("cajaEq").style.display="";
+    lista($("eb"),e.equipos.blanco);lista($("en"),e.equipos.negro);
+  } else $("cajaEq").style.display="none";
+}
+function cuota(e){var n=e.equipos?(e.equipos.blanco.length+e.equipos.negro.length):e.lista.length;return(e.monto&&n)?Math.ceil(e.monto/n/100)*100:0}
+function col(x){return "₡"+Number(x).toLocaleString("es-CR")}
+function pintarMonto(e){
+  if(document.activeElement!==$("monto"))$("monto").value=e.monto?String(e.monto):"";
+  var c=cuota(e),n=e.equipos?(e.equipos.blanco.length+e.equipos.negro.length):e.lista.length;
+  $("pp").textContent=!e.monto?"Ponga el monto total de la cancha.":(n?"Total "+col(e.monto)+" ÷ "+n+" jugadores = "+col(c)+" c/u":"Total "+col(e.monto));
+  $("pago").textContent=c?"💰 Cada uno paga "+col(c):"Falta poner el valor de la cancha";
+}
+function esPortero(n){return E.lista.some(function(j){return j.n===n&&j.p})}
+function lista(el,arr){el.innerHTML="";arr.forEach(function(n){var li=document.createElement("li");li.textContent=n+(esPortero(n)?" 🧤":"")+(cuota(E)?" · "+col(cuota(E)):"");el.appendChild(li)})}
+
+$("btnIn").onclick=function(){
+  var n=$("nombre").value.trim();if(!n){msg("Escriba el nombre.");return}
+  llamar("inscribir",[n,$("portero").checked,TOKEN],function(){
+    var m=mios();m.push(n.replace(/\s+/g," "));setMios(m);
+    $("nombre").value="";$("portero").checked=false;msg("¡Listo, confirmado! Puede apuntar a otro.",true);
+  });
+};
+$("nombre").addEventListener("keydown",function(ev){if(ev.key==="Enter")$("btnIn").click()});
+$("btnFormar").onclick=function(){llamar("formarEquipos",[""],function(){$("cajaEq").scrollIntoView({behavior:"smooth"})})};
+$("btnReset").onclick=function(){llamar("reiniciar",[""],function(){setMios([]);msg("Lista reiniciada.",true)})};
+document.querySelectorAll("[data-cupo]").forEach(function(b){b.onclick=function(){llamar("setCupo",["",b.dataset.cupo],function(){msg("Cupo cambiado a "+b.dataset.cupo,true)})}});
+$("btnCopiar").onclick=function(){
+  var b=this,f=function(a){return a.map(function(n,i){return (i+1)+". "+n+(esPortero(n)?" 🧤":"")}).join("\n")};
+  var t="⚽ *Equipos de hoy*\n\n⚪ *BLANCO*\n"+f(E.equipos.blanco)+"\n\n⚫ *NEGRO*\n"+f(E.equipos.negro)+(cuota(E)?"\n\n💰 Cancha "+col(E.monto)+" → *"+col(cuota(E))+" por persona*":"");
+  var ok=function(){b.textContent="✅ Copiado, péguelo en WhatsApp";setTimeout(function(){b.textContent="📋 Copiar para WhatsApp"},2500)};
+  var viejo=function(){var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok()}catch(e){}ta.remove()};
+  if(navigator.clipboard)navigator.clipboard.writeText(t).then(ok,viejo);else viejo();
+};
+$("btnMonto").onclick=function(){llamar("setMonto",[$("monto").value],function(){$("monto").blur();msg("Monto guardado.",true)})};
+$("monto").addEventListener("focus",function(){var t=this;setTimeout(function(){t.select()},0)});
+$("monto").addEventListener("keydown",function(ev){if(ev.key==="Enter")$("btnMonto").click()});
+function refrescar(){if(!ocupado&&!document.hidden)api("getEstado").then(function(e){if(!ocupado)pintar(e)}).catch(function(){})}
+refrescar();setInterval(refrescar,15000);
+document.addEventListener("visibilitychange",refrescar);
+</script>
+</body>
+</html>
