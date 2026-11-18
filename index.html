@@ -124,7 +124,7 @@ function pintar(e){
     lista($("eb"),e.equipos.blanco);lista($("en"),e.equipos.negro);
   } else $("cajaEq").style.display="none";
 }
-function cuota(e){var n=e.equipos?(e.equipos.blanco.length+e.equipos.negro.length):e.lista.length;return(e.monto&&n)?Math.ceil(e.monto/n/100)*100:0}
+function cuota(e){var n=e.equipos?(e.equipos.blanco.length+e.equipos.negro.length):e.lista.length;return(e.monto&&n)?Math.ceil(e.monto/n):0}
 function col(x){return "₡"+Number(x).toLocaleString("es-CR")}
 function pintarMonto(e){
   if(document.activeElement!==$("monto"))$("monto").value=e.monto?String(e.monto):"";
